@@ -20,33 +20,51 @@ Pull the image from GitHub Container Registry:
 
 ```bash
 # Using the latest tag
-docker pull ghcr.io/OWNER/n8n-with-ffmpeg-and-curl:latest
+docker pull ghcr.io/christiankuri/n8n-with-ffmpeg-and-curl:latest
 
 # Using a specific n8n version
-docker pull ghcr.io/OWNER/n8n-with-ffmpeg-and-curl:1.70.0
+docker pull ghcr.io/christiankuri/n8n-with-ffmpeg-and-curl:1.70.0
 ```
 
-> **Note:** Replace `OWNER` with your GitHub username or organization name.
+## Quick Start with Docker Compose
 
-### Docker Compose Example
+This repo includes a production-ready `docker-compose.yml` with PostgreSQL and Redis.
 
-```yaml
-services:
-  n8n:
-    image: ghcr.io/OWNER/n8n-with-ffmpeg-and-curl:latest
-    restart: unless-stopped
-    ports:
-      - "5678:5678"
-    environment:
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=changeme
-    volumes:
-      - n8n_data:/home/node/.n8n
+### 1. Clone the repository
 
-volumes:
-  n8n_data:
+```bash
+git clone https://github.com/christiankuri/n8n-with-ffmpeg-and-curl.git
+cd n8n-with-ffmpeg-and-curl
 ```
+
+### 2. Configure environment variables
+
+```bash
+cp .env.example .env
+# Edit .env with your values
+```
+
+### 3. Start the services
+
+```bash
+docker compose up -d
+```
+
+### 4. Access n8n
+
+Open `http://localhost:5678` in your browser (or your configured `HOST`).
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `HOST` | Your n8n domain (e.g., `n8n.yourdomain.com`) |
+| `POSTGRES_DB` | PostgreSQL database name |
+| `POSTGRES_USER` | PostgreSQL root user |
+| `POSTGRES_PASSWORD` | PostgreSQL root password |
+| `POSTGRES_NON_ROOT_USER` | PostgreSQL user for n8n |
+| `POSTGRES_NON_ROOT_PASSWORD` | PostgreSQL password for n8n |
+| `ENCRYPTION_KEY` | n8n encryption key (generate with `openssl rand -hex 32`) |
 
 ## Supported Architectures
 
@@ -79,7 +97,7 @@ The workflow automatically:
 
 ### Required Repository Settings
 
-No additional secrets are required! The workflow uses:
+No additional secrets are required for the container registry! The workflow uses:
 
 - `GITHUB_TOKEN` - Automatically provided by GitHub Actions for pushing to ghcr.io
 - `PAT_GITHUB` - Personal Access Token with repo scope (for updating the version file)
