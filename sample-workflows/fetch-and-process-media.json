@@ -1,0 +1,156 @@
+{
+  "name": "Fetch & Process Media with Curl + FFmpeg",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "start-node",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "content": "## 🔄 Fetch & Process Media\n\nThis workflow demonstrates:\n1. **Curl**: Download a sample video\n2. **FFmpeg**: Create thumbnail from video\n3. **FFmpeg**: Extract audio track\n4. **FFmpeg**: Convert to different format\n\n### Use Cases:\n- Generate thumbnails for videos\n- Extract audio from video files\n- Convert between media formats\n- Process media from URLs",
+        "height": 300,
+        "width": 320
+      },
+      "id": "sticky-note",
+      "name": "Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-120, 140]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "sampleVideoUrl",
+              "value": "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4"
+            },
+            {
+              "name": "workDir",
+              "value": "/tmp/n8n-ffmpeg-test"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-config",
+      "name": "Set Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "command": "mkdir -p {{ $json.workDir }} && curl -sL '{{ $json.sampleVideoUrl }}' -o {{ $json.workDir }}/input.mp4 && echo '✅ Downloaded sample video' && ls -lh {{ $json.workDir }}/input.mp4"
+      },
+      "id": "download-video",
+      "name": "Download Sample Video (Curl)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "command": "ffmpeg -y -i {{ $('Set Configuration').item.json.workDir }}/input.mp4 -ss 00:00:01 -vframes 1 -q:v 2 {{ $('Set Configuration').item.json.workDir }}/thumbnail.jpg 2>/dev/null && echo '✅ Thumbnail created' && ls -lh {{ $('Set Configuration').item.json.workDir }}/thumbnail.jpg"
+      },
+      "id": "create-thumbnail",
+      "name": "Create Thumbnail (FFmpeg)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [920, 180]
+    },
+    {
+      "parameters": {
+        "command": "ffmpeg -y -i {{ $('Set Configuration').item.json.workDir }}/input.mp4 -vn -acodec libmp3lame -q:a 2 {{ $('Set Configuration').item.json.workDir }}/audio.mp3 2>/dev/null && echo '✅ Audio extracted' && ls -lh {{ $('Set Configuration').item.json.workDir }}/audio.mp3"
+      },
+      "id": "extract-audio",
+      "name": "Extract Audio (FFmpeg)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "command": "ffmpeg -y -i {{ $('Set Configuration').item.json.workDir }}/input.mp4 -c:v libx264 -crf 28 -preset fast -c:a aac {{ $('Set Configuration').item.json.workDir }}/converted.mp4 2>/dev/null && echo '✅ Video re-encoded' && ls -lh {{ $('Set Configuration').item.json.workDir }}/converted.mp4"
+      },
+      "id": "convert-video",
+      "name": "Re-encode Video (FFmpeg)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [920, 420]
+    },
+    {
+      "parameters": {
+        "command": "echo '📊 Processing Summary:' && echo '=====================' && ls -lh {{ $('Set Configuration').item.json.workDir }}/ && echo '' && echo '📁 Files created:' && echo '- thumbnail.jpg (frame from video)' && echo '- audio.mp3 (extracted audio)' && echo '- converted.mp4 (re-encoded video)'"
+      },
+      "id": "summary",
+      "name": "Show Results",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1180, 300]
+    },
+    {
+      "parameters": {
+        "command": "rm -rf {{ $('Set Configuration').item.json.workDir }} && echo '🧹 Cleaned up temporary files'"
+      },
+      "id": "cleanup",
+      "name": "Cleanup",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1400, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [{ "node": "Set Configuration", "type": "main", "index": 0 }]
+      ]
+    },
+    "Set Configuration": {
+      "main": [
+        [{ "node": "Download Sample Video (Curl)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Download Sample Video (Curl)": {
+      "main": [
+        [
+          { "node": "Create Thumbnail (FFmpeg)", "type": "main", "index": 0 },
+          { "node": "Extract Audio (FFmpeg)", "type": "main", "index": 0 },
+          { "node": "Re-encode Video (FFmpeg)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Create Thumbnail (FFmpeg)": {
+      "main": [
+        [{ "node": "Show Results", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extract Audio (FFmpeg)": {
+      "main": [
+        [{ "node": "Show Results", "type": "main", "index": 0 }]
+      ]
+    },
+    "Re-encode Video (FFmpeg)": {
+      "main": [
+        [{ "node": "Show Results", "type": "main", "index": 0 }]
+      ]
+    },
+    "Show Results": {
+      "main": [
+        [{ "node": "Cleanup", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0
+}
+

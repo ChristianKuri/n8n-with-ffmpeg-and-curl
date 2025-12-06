@@ -1,0 +1,135 @@
+{
+  "name": "Download Video & Extract Audio (yt-dlp + FFmpeg)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "start-node",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "content": "## 🎬 Download Video & Extract Audio\n\nThis workflow demonstrates:\n1. **yt-dlp**: Download video from URL\n2. **FFmpeg**: Extract audio as MP3\n3. **Curl**: Could fetch metadata from APIs\n\n### How to use:\n1. Set the video URL in the 'Set Video URL' node\n2. Execute the workflow\n3. Audio file will be saved to /data folder\n\n### Note:\nMake sure /data is mounted in your Docker container",
+        "height": 320,
+        "width": 340
+      },
+      "id": "sticky-note",
+      "name": "Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-140, 120]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "videoUrl",
+              "value": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+            },
+            {
+              "name": "outputDir",
+              "value": "/tmp/n8n-media"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-url",
+      "name": "Set Video URL",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "command": "mkdir -p {{ $json.outputDir }} && echo 'Output directory ready: {{ $json.outputDir }}'"
+      },
+      "id": "create-dir",
+      "name": "Create Output Directory",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "command": "yt-dlp --print title --print duration --print thumbnail --no-download '{{ $('Set Video URL').item.json.videoUrl }}' 2>/dev/null | head -3"
+      },
+      "id": "get-info",
+      "name": "Get Video Info (yt-dlp)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [900, 180]
+    },
+    {
+      "parameters": {
+        "command": "cd {{ $('Set Video URL').item.json.outputDir }} && yt-dlp -x --audio-format mp3 --audio-quality 0 -o 'audio.%(ext)s' '{{ $('Set Video URL').item.json.videoUrl }}' 2>&1 && echo '' && echo '✅ Download complete!' && ls -la {{ $('Set Video URL').item.json.outputDir }}"
+      },
+      "id": "download-audio",
+      "name": "Download as MP3 (yt-dlp + FFmpeg)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [900, 420]
+    },
+    {
+      "parameters": {
+        "command": "ffprobe -v quiet -print_format json -show_format -show_streams {{ $('Set Video URL').item.json.outputDir }}/audio.mp3 2>/dev/null | head -30"
+      },
+      "id": "get-audio-info",
+      "name": "Get Audio Info (FFprobe)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1140, 420]
+    },
+    {
+      "parameters": {
+        "command": "rm -rf {{ $('Set Video URL').item.json.outputDir }} && echo '🧹 Cleaned up temporary files'"
+      },
+      "id": "cleanup",
+      "name": "Cleanup Temp Files",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1380, 420]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [{ "node": "Set Video URL", "type": "main", "index": 0 }]
+      ]
+    },
+    "Set Video URL": {
+      "main": [
+        [{ "node": "Create Output Directory", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Output Directory": {
+      "main": [
+        [
+          { "node": "Get Video Info (yt-dlp)", "type": "main", "index": 0 },
+          { "node": "Download as MP3 (yt-dlp + FFmpeg)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Download as MP3 (yt-dlp + FFmpeg)": {
+      "main": [
+        [{ "node": "Get Audio Info (FFprobe)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Get Audio Info (FFprobe)": {
+      "main": [
+        [{ "node": "Cleanup Temp Files", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0
+}
+

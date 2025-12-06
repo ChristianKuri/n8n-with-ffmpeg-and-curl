@@ -85,6 +85,25 @@ docker build -t n8n-custom .
 docker buildx build --platform linux/amd64,linux/arm64 -t n8n-custom .
 ```
 
+## Sample Workflows
+
+The `sample-workflows/` directory contains ready-to-import n8n workflows that demonstrate the installed tools:
+
+### 1. Test FFmpeg Tools (`test-ffmpeg-tools.json`)
+Simple workflow to verify that ffmpeg, curl, and yt-dlp are installed correctly.
+
+### 2. Download Video & Extract Audio (`download-and-convert-video.json`)
+Downloads a video using yt-dlp and extracts audio as MP3 using FFmpeg.
+
+### 3. Fetch & Process Media (`fetch-and-process-media.json`)
+Demonstrates:
+- Downloading media with curl
+- Creating thumbnails from video
+- Extracting audio tracks
+- Re-encoding video files
+
+**To import:** In n8n, go to **Workflows** → **Import from File** → Select the JSON file.
+
 ## GitHub Actions Workflow
 
 The workflow automatically:

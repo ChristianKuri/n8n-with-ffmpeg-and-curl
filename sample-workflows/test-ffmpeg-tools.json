@@ -1,0 +1,99 @@
+{
+  "name": "Test FFmpeg, Curl & yt-dlp Tools",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "start-node",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "command": "ffmpeg -version | head -5"
+      },
+      "id": "test-ffmpeg",
+      "name": "Test FFmpeg Version",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [480, 160]
+    },
+    {
+      "parameters": {
+        "command": "curl --version | head -1"
+      },
+      "id": "test-curl",
+      "name": "Test Curl Version",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "command": "yt-dlp --version"
+      },
+      "id": "test-ytdlp",
+      "name": "Test yt-dlp Version",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [480, 440]
+    },
+    {
+      "parameters": {
+        "command": "echo 'All tools are installed and working!' && echo '' && echo 'FFmpeg:' && ffmpeg -version 2>&1 | head -1 && echo '' && echo 'Curl:' && curl --version | head -1 && echo '' && echo 'yt-dlp:' && yt-dlp --version"
+      },
+      "id": "summary",
+      "name": "Summary - All Tools",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "content": "## 🧪 Test Custom n8n Tools\n\nThis workflow tests that **ffmpeg**, **curl**, and **yt-dlp** are properly installed in your custom n8n Docker image.\n\n### How to use:\n1. Click **Execute Workflow**\n2. Check each node's output to verify the tools are available\n\n### Expected Results:\n- **FFmpeg**: Should show version 6.x+\n- **Curl**: Should show version 8.x+\n- **yt-dlp**: Should show version 2024.x+",
+        "height": 340,
+        "width": 320
+      },
+      "id": "sticky-note",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-100, 140]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          { "node": "Test FFmpeg Version", "type": "main", "index": 0 },
+          { "node": "Test Curl Version", "type": "main", "index": 0 },
+          { "node": "Test yt-dlp Version", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Test FFmpeg Version": {
+      "main": [
+        [{ "node": "Summary - All Tools", "type": "main", "index": 0 }]
+      ]
+    },
+    "Test Curl Version": {
+      "main": [
+        [{ "node": "Summary - All Tools", "type": "main", "index": 0 }]
+      ]
+    },
+    "Test yt-dlp Version": {
+      "main": [
+        [{ "node": "Summary - All Tools", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0
+}
+
