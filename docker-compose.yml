@@ -6,17 +6,12 @@ volumes:
 networks:
   n8n_network:
     name: n8n_network
-  # External network for Traefik (optional - comment out if not using Traefik)
-  traefik:
-    external: true
-    name: ${TRAEFIK_NETWORK:-traefik}
 
 x-shared: &shared
   restart: always
   image: ghcr.io/christiankuri/n8n-with-ffmpeg-and-curl:latest
   networks:
     - n8n_network
-    - traefik
   environment:
     - N8N_HOST=${N8N_HOST}
     - WEBHOOK_URL=https://${N8N_HOST}/
@@ -89,30 +84,3 @@ services:
     container_name: ${N8N_CONTAINER_NAME:-n8n}
     ports:
       - ${N8N_PORT:-5678}:5678
-    labels:
-      # Traefik Configuration (set TRAEFIK_ENABLE=true in .env to activate)
-      - traefik.enable=${TRAEFIK_ENABLE:-false}
-      - traefik.docker.network=${TRAEFIK_NETWORK:-traefik}
-      
-      # HTTP Router (redirect to HTTPS)
-      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}-http.rule=Host(`${N8N_HOST}`)
-      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}-http.entrypoints=${TRAEFIK_ENTRYPOINT_HTTP:-web}
-      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}-http.middlewares=${N8N_TRAEFIK_ROUTER:-n8n}-https-redirect
-      
-      # HTTPS Router
-      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}.rule=Host(`${N8N_HOST}`)
-      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}.entrypoints=${TRAEFIK_ENTRYPOINT_HTTPS:-websecure}
-      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}.tls=true
-      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
-      
-      # Service Configuration
-      - traefik.http.services.${N8N_TRAEFIK_ROUTER:-n8n}.loadbalancer.server.port=5678
-      
-      # Middleware: HTTPS Redirect
-      - traefik.http.middlewares.${N8N_TRAEFIK_ROUTER:-n8n}-https-redirect.redirectscheme.scheme=https
-      - traefik.http.middlewares.${N8N_TRAEFIK_ROUTER:-n8n}-https-redirect.redirectscheme.permanent=true
-      
-      # Middleware: Security Headers (optional)
-      - traefik.http.middlewares.${N8N_TRAEFIK_ROUTER:-n8n}-headers.headers.stsSeconds=31536000
-      - traefik.http.middlewares.${N8N_TRAEFIK_ROUTER:-n8n}-headers.headers.stsIncludeSubdomains=true
-      - traefik.http.middlewares.${N8N_TRAEFIK_ROUTER:-n8n}-headers.headers.stsPreload=true

@@ -1,182 +1,143 @@
 # Custom n8n Docker Image
 
-This repository maintains a custom n8n Docker image with additional packages installed:
-
-- **ffmpeg** - Video/audio processing
-- **curl** - HTTP client
-- **yt-dlp** - Video downloader
+Custom n8n Docker image with **ffmpeg**, **curl**, and **yt-dlp** pre-installed for media processing workflows.
 
 ## Features
 
-- **Automatically stays up-to-date** with the latest n8n releases
-- **Multi-architecture support** - works on both AMD64 (x86_64) and ARM64 (Apple Silicon, Raspberry Pi, etc.)
-- **Traefik-ready** - Includes labels for automatic HTTPS with Traefik
-- Builds and pushes to **GitHub Container Registry** every 6 hours if a new n8n version is available
-- Maintains both versioned tags and a `latest` tag
-- Build attestation for supply chain security
+- **ffmpeg** - Video/audio processing
+- **curl** - HTTP client  
+- **yt-dlp** - Video downloader
+- **Multi-architecture** - AMD64 & ARM64 (Apple Silicon, Raspberry Pi)
+- **Auto-updates** - Rebuilds when new n8n versions are released
+- **Flexible deployment** - Standalone, Traefik, Dokploy, or any PaaS
 
-## Usage
+## Quick Start
 
-Pull the image from GitHub Container Registry:
-
-```bash
-# Using the latest tag
-docker pull ghcr.io/christiankuri/n8n-with-ffmpeg-and-curl:latest
-
-# Using a specific n8n version
-docker pull ghcr.io/christiankuri/n8n-with-ffmpeg-and-curl:1.70.0
-```
-
-## Quick Start with Docker Compose
-
-This repo includes a production-ready `docker-compose.yml` with PostgreSQL, Redis, and Traefik support.
-
-### 1. Clone the repository
+### Standalone (No Reverse Proxy)
 
 ```bash
 git clone https://github.com/christiankuri/n8n-with-ffmpeg-and-curl.git
 cd n8n-with-ffmpeg-and-curl
-```
 
-### 2. Configure environment variables
-
-```bash
 cp .env.example .env
-nano .env  # Edit with your values
-```
+nano .env  # Set your passwords and encryption key
 
-### 3. Create the Traefik network (if using Traefik)
-
-```bash
-docker network create traefik
-```
-
-### 4. Start the services
-
-```bash
 docker compose up -d
 ```
 
-### 5. Access n8n
+Access n8n at `http://localhost:5678`
 
-- **With Traefik**: `https://n8n.yourdomain.com`
-- **Without Traefik**: `http://localhost:5678`
-
-## Deployment Options
-
-### Option A: With Traefik (Recommended for Production)
-
-The docker-compose includes Traefik labels for automatic HTTPS. Make sure you have:
-
-1. Traefik running with Let's Encrypt configured
-2. DNS pointing to your server
-3. The `traefik` network created
+### With Traefik
 
 ```bash
-# Create the network if it doesn't exist
+# 1. Create traefik network (if not exists)
 docker network create traefik
 
-# Start n8n
-docker compose up -d
+# 2. Configure .env
+cp .env.example .env
+nano .env  # Set N8N_HOST, passwords, etc.
+
+# 3. Start with Traefik override
+docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d
 ```
 
-### Option B: Without Traefik
+Access n8n at `https://your-domain.com`
 
-If you're not using Traefik, set these in your `.env`:
+### With Dokploy
 
-```env
-TRAEFIK_ENABLE=false
+**Step 1:** In Dokploy's compose settings, set the compose command to:
+
+```
+-f docker-compose.yml -f docker-compose.dokploy.yml
 ```
 
-Then access n8n directly at `http://localhost:5678` or configure your own reverse proxy.
+**Step 2:** Set these environment variables in Dokploy UI:
+
+| Variable | Value |
+|----------|-------|
+| `N8N_HOST` | `n8n.yourdomain.com` |
+| `N8N_ENCRYPTION_KEY` | Your key (run `openssl rand -hex 32`) |
+| `POSTGRES_USER` | `postgres` |
+| `POSTGRES_PASSWORD` | Secure password |
+| `POSTGRES_DB` | `n8n` |
+| `POSTGRES_NON_ROOT_USER` | `n8n` |
+| `POSTGRES_NON_ROOT_PASSWORD` | Secure password |
+
+**Step 3:** Choose your domain configuration method:
+
+| Option | How to |
+|--------|--------|
+| **A: Dokploy UI** (recommended) | Leave `TRAEFIK_ENABLE` unset or `false`, configure domain in Dokploy's Domains UI |
+| **B: Labels** | Set `TRAEFIK_ENABLE=true` and `N8N_HOST=your-domain.com` |
+
+## Deployment Options Summary
+
+| Deployment | Command |
+|------------|---------|
+| **Standalone** | `docker compose up -d` |
+| **Traefik** | `docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d` |
+| **Dokploy** | `-f docker-compose.yml -f docker-compose.dokploy.yml` in Dokploy UI |
+
+## Pull Image Directly
+
+```bash
+docker pull ghcr.io/christiankuri/n8n-with-ffmpeg-and-curl:latest
+```
 
 ## Environment Variables
 
-### n8n Configuration
+### Required
+
+| Variable | Description |
+|----------|-------------|
+| `N8N_HOST` | Your domain (e.g., `n8n.example.com`) |
+| `N8N_ENCRYPTION_KEY` | Encryption key - `openssl rand -hex 32` |
+| `POSTGRES_USER` | PostgreSQL root user |
+| `POSTGRES_PASSWORD` | PostgreSQL root password |
+| `POSTGRES_DB` | Database name |
+| `POSTGRES_NON_ROOT_USER` | n8n database user |
+| `POSTGRES_NON_ROOT_PASSWORD` | n8n database password |
+
+### Optional
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `N8N_HOST` | - | Your n8n domain (e.g., `n8n.yourdomain.com`) |
-| `N8N_ENCRYPTION_KEY` | - | Encryption key (generate with `openssl rand -hex 32`) |
-| `N8N_PORT` | `5678` | Port to expose n8n |
-| `N8N_PAYLOAD_SIZE_MAX` | `512` | Max payload size in MB |
-| `NODE_MAX_MEMORY` | `4096` | Node.js max memory in MB |
-| `N8N_DATA_PATH` | `/mnt` | Host path to mount as /data |
-
-### PostgreSQL Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
+| `N8N_PORT` | `5678` | Port to expose |
+| `N8N_DATA_PATH` | `/mnt` | Host path for /data mount |
+| `NODE_MAX_MEMORY` | `4096` | Node.js max memory (MB) |
 | `POSTGRES_VERSION` | `16` | PostgreSQL version |
-| `POSTGRES_DB` | - | Database name |
-| `POSTGRES_USER` | - | Root user |
-| `POSTGRES_PASSWORD` | - | Root password |
-| `POSTGRES_NON_ROOT_USER` | - | n8n database user |
-| `POSTGRES_NON_ROOT_PASSWORD` | - | n8n database password |
+| `REDIS_VERSION` | `6-alpine` | Redis version |
 
-### Traefik Configuration
+### Traefik Variables (when using docker-compose.traefik.yml)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TRAEFIK_ENABLE` | `true` | Enable Traefik labels |
 | `TRAEFIK_NETWORK` | `traefik` | Traefik's Docker network |
-| `TRAEFIK_CERTRESOLVER` | `letsencrypt` | Certificate resolver name |
-| `N8N_TRAEFIK_ROUTER` | `n8n` | Router name (change for multiple instances) |
-
-## Supported Architectures
-
-| Architecture | Tag |
-|--------------|-----|
-| x86_64 / AMD64 | `linux/amd64` |
-| ARM64 / Apple Silicon | `linux/arm64` |
-
-The image is built as a multi-platform manifest, so Docker will automatically pull the correct architecture for your system.
+| `TRAEFIK_CERTRESOLVER` | `letsencrypt` | Certificate resolver |
+| `N8N_TRAEFIK_ROUTER` | `n8n` | Router name |
 
 ## Sample Workflows
 
-The `sample-workflows/` directory contains ready-to-import n8n workflows that demonstrate the installed tools:
+Import these from `sample-workflows/` to test the installed tools:
 
-### 1. Test FFmpeg Tools (`test-ffmpeg-tools.json`)
-Simple workflow to verify that ffmpeg, curl, and yt-dlp are installed correctly.
+| File | Description |
+|------|-------------|
+| `test-ffmpeg-tools.json` | Verify ffmpeg, curl, yt-dlp installation |
+| `download-and-convert-video.json` | Download video, extract audio |
+| `fetch-and-process-media.json` | Thumbnails, audio extraction, re-encoding |
 
-### 2. Download Video & Extract Audio (`download-and-convert-video.json`)
-Downloads a video using yt-dlp and extracts audio as MP3 using FFmpeg.
+## Supported Architectures
 
-### 3. Fetch & Process Media (`fetch-and-process-media.json`)
-Demonstrates:
-- Downloading media with curl
-- Creating thumbnails from video
-- Extracting audio tracks
-- Re-encoding video files
-
-**To import:** In n8n, go to **Workflows** → **Import from File** → Select the JSON file.
+| Architecture | Platforms |
+|--------------|-----------|
+| `linux/amd64` | Intel, AMD, most cloud VMs |
+| `linux/arm64` | Apple Silicon, Raspberry Pi 4+, AWS Graviton |
 
 ## Building Locally
 
 ```bash
-# Build for your current architecture
 docker build -t n8n-custom .
-
-# Build for multiple architectures
-docker buildx build --platform linux/amd64,linux/arm64 -t n8n-custom .
 ```
-
-## GitHub Actions Workflow
-
-The workflow automatically:
-
-1. Checks for new n8n releases every 6 hours
-2. Builds multi-architecture images (AMD64 + ARM64) using QEMU emulation
-3. Pushes to GitHub Container Registry (ghcr.io)
-4. Generates build attestation for supply chain security
-5. Updates the version tracker file
-
-### Required Repository Settings
-
-No additional secrets are required for the container registry! The workflow uses:
-
-- `GITHUB_TOKEN` - Automatically provided by GitHub Actions for pushing to ghcr.io
-- `PAT_GITHUB` - Personal Access Token with repo scope (for updating the version file)
 
 ## License
 

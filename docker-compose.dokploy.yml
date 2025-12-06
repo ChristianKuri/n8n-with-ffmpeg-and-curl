@@ -1,0 +1,52 @@
+# Dokploy Override File
+# 
+# This file connects all services to dokploy-network for Traefik routing.
+#
+# Two options for domain configuration:
+#   Option A: Use Dokploy's UI (recommended) - set TRAEFIK_ENABLE=false or leave unset
+#   Option B: Use labels below - set TRAEFIK_ENABLE=true and configure N8N_HOST
+#
+# Usage in Dokploy:
+#   Set compose command to: -f docker-compose.yml -f docker-compose.dokploy.yml
+
+networks:
+  dokploy-network:
+    external: true
+
+services:
+  postgres:
+    networks:
+      - n8n_network
+      - dokploy-network
+
+  redis:
+    networks:
+      - n8n_network
+      - dokploy-network
+
+  n8n:
+    networks:
+      - n8n_network
+      - dokploy-network
+    labels:
+      # Set TRAEFIK_ENABLE=true to use labels, or leave false to use Dokploy's UI
+      - traefik.enable=${TRAEFIK_ENABLE:-false}
+      - traefik.docker.network=dokploy-network
+      
+      # HTTP Router (redirect to HTTPS)
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}-http.rule=Host(`${N8N_HOST}`)
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}-http.entrypoints=${TRAEFIK_ENTRYPOINT_HTTP:-web}
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}-http.middlewares=${N8N_TRAEFIK_ROUTER:-n8n}-https-redirect
+      
+      # HTTPS Router
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}.rule=Host(`${N8N_HOST}`)
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}.entrypoints=${TRAEFIK_ENTRYPOINT_HTTPS:-websecure}
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}.tls=true
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      
+      # Service
+      - traefik.http.services.${N8N_TRAEFIK_ROUTER:-n8n}.loadbalancer.server.port=5678
+      
+      # Middleware: HTTPS Redirect
+      - traefik.http.middlewares.${N8N_TRAEFIK_ROUTER:-n8n}-https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.${N8N_TRAEFIK_ROUTER:-n8n}-https-redirect.redirectscheme.permanent=true
