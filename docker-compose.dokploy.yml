@@ -10,6 +10,8 @@
 #   Set compose command to: -f docker-compose.yml -f docker-compose.dokploy.yml
 
 networks:
+  n8n_network:
+    name: n8n_network
   dokploy-network:
     external: true
 

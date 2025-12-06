@@ -7,6 +7,8 @@
 #   3. Set N8N_HOST in your .env file
 
 networks:
+  n8n_network:
+    name: n8n_network
   traefik:
     external: true
     name: ${TRAEFIK_NETWORK:-traefik}
