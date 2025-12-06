@@ -6,15 +6,20 @@ volumes:
 networks:
   n8n_network:
     name: n8n_network
+  # External network for Traefik (optional - comment out if not using Traefik)
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}
 
 x-shared: &shared
   restart: always
   image: ghcr.io/christiankuri/n8n-with-ffmpeg-and-curl:latest
   networks:
     - n8n_network
+    - traefik
   environment:
-    - N8N_HOST=${HOST}
-    - WEBHOOK_URL=https://${HOST}/
+    - N8N_HOST=${N8N_HOST}
+    - WEBHOOK_URL=https://${N8N_HOST}/
     - N8N_PROTOCOL=https
     - DB_TYPE=postgresdb
     - DB_POSTGRESDB_HOST=postgres
@@ -25,20 +30,20 @@ x-shared: &shared
     - EXECUTIONS_MODE=regular
     - QUEUE_BULL_REDIS_HOST=redis
     - QUEUE_HEALTH_CHECK_ACTIVE=true
-    - N8N_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
     - N8N_RELEASE_DATE=${N8N_RELEASE_DATE}
-    - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=${N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS}
-    - N8N_PAYLOAD_SIZE_MAX=512
-    - NODE_OPTIONS=--max-old-space-size=4096
+    - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=${N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS:-false}
+    - N8N_PAYLOAD_SIZE_MAX=${N8N_PAYLOAD_SIZE_MAX:-512}
+    - NODE_OPTIONS=--max-old-space-size=${NODE_MAX_MEMORY:-4096}
     - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
-    - N8N_FILESYSTEM_MAX_SIZE=512
-    - N8N_RUNNERS_ENABLED=true
+    - N8N_FILESYSTEM_MAX_SIZE=${N8N_FILESYSTEM_MAX_SIZE:-512}
+    - N8N_RUNNERS_ENABLED=${N8N_RUNNERS_ENABLED:-true}
     - N8N_RUNNERS_MODE=internal
-    - N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT=10800
-    - N8N_RUNNERS_MAX_CONCURRENCY=20
+    - N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT=${N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT:-10800}
+    - N8N_RUNNERS_MAX_CONCURRENCY=${N8N_RUNNERS_MAX_CONCURRENCY:-20}
   volumes:
     - n8n_storage:/home/node/.n8n
-    - /mnt:/data
+    - ${N8N_DATA_PATH:-/mnt}:/data
   depends_on:
     redis:
       condition: service_healthy
@@ -47,7 +52,7 @@ x-shared: &shared
 
 services:
   postgres:
-    image: postgres:16
+    image: postgres:${POSTGRES_VERSION:-16}
     restart: always
     networks:
       - n8n_network
@@ -67,7 +72,7 @@ services:
       retries: 10
 
   redis:
-    image: redis:6-alpine
+    image: redis:${REDIS_VERSION:-6-alpine}
     restart: always
     networks:
       - n8n_network
@@ -81,7 +86,33 @@ services:
 
   n8n:
     <<: *shared
-    container_name: n8n
+    container_name: ${N8N_CONTAINER_NAME:-n8n}
     ports:
-      - 5678:5678
-
+      - ${N8N_PORT:-5678}:5678
+    labels:
+      # Traefik Configuration
+      - traefik.enable=${TRAEFIK_ENABLE:-true}
+      - traefik.docker.network=${TRAEFIK_NETWORK:-traefik}
+      
+      # HTTP Router (redirect to HTTPS)
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}-http.rule=Host(`${N8N_HOST}`)
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}-http.entrypoints=${TRAEFIK_ENTRYPOINT_HTTP:-web}
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}-http.middlewares=${N8N_TRAEFIK_ROUTER:-n8n}-https-redirect
+      
+      # HTTPS Router
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}.rule=Host(`${N8N_HOST}`)
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}.entrypoints=${TRAEFIK_ENTRYPOINT_HTTPS:-websecure}
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}.tls=true
+      - traefik.http.routers.${N8N_TRAEFIK_ROUTER:-n8n}.tls.certresolver=${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      
+      # Service Configuration
+      - traefik.http.services.${N8N_TRAEFIK_ROUTER:-n8n}.loadbalancer.server.port=5678
+      
+      # Middleware: HTTPS Redirect
+      - traefik.http.middlewares.${N8N_TRAEFIK_ROUTER:-n8n}-https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.${N8N_TRAEFIK_ROUTER:-n8n}-https-redirect.redirectscheme.permanent=true
+      
+      # Middleware: Security Headers (optional)
+      - traefik.http.middlewares.${N8N_TRAEFIK_ROUTER:-n8n}-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.${N8N_TRAEFIK_ROUTER:-n8n}-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.${N8N_TRAEFIK_ROUTER:-n8n}-headers.headers.stsPreload=true
