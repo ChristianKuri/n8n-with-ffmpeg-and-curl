@@ -63,12 +63,9 @@ Access n8n at `https://your-domain.com`
 | `POSTGRES_NON_ROOT_USER` | `n8n` |
 | `POSTGRES_NON_ROOT_PASSWORD` | Secure password |
 
-**Step 3:** Choose your domain configuration method:
+**Step 3:** Configure your domain in **Dokploy's Domains UI**
 
-| Option | How to |
-|--------|--------|
-| **A: Dokploy UI** (recommended) | Leave `TRAEFIK_ENABLE` unset or `false`, configure domain in Dokploy's Domains UI |
-| **B: Labels** | Set `TRAEFIK_ENABLE=true` and `N8N_HOST=your-domain.com` |
+Dokploy will automatically add the necessary Traefik labels for routing and SSL.
 
 ## Deployment Options Summary
 
