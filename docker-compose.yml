@@ -90,8 +90,8 @@ services:
     ports:
       - ${N8N_PORT:-5678}:5678
     labels:
-      # Traefik Configuration
-      - traefik.enable=${TRAEFIK_ENABLE:-true}
+      # Traefik Configuration (set TRAEFIK_ENABLE=true in .env to activate)
+      - traefik.enable=${TRAEFIK_ENABLE:-false}
       - traefik.docker.network=${TRAEFIK_NETWORK:-traefik}
       
       # HTTP Router (redirect to HTTPS)
