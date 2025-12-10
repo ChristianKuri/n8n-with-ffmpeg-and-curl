@@ -41,6 +41,7 @@ x-shared: &shared
     - NODES_EXCLUDE=${NODES_EXCLUDE:-[]}
     - NODE_FUNCTION_ALLOW_BUILTIN=${NODE_FUNCTION_ALLOW_BUILTIN:-*}
     - NODE_FUNCTION_ALLOW_EXTERNAL=${NODE_FUNCTION_ALLOW_EXTERNAL:-*}
+    - N8N_RESTRICT_FILE_ACCESS_TO=${N8N_RESTRICT_FILE_ACCESS_TO:-/home/node/.n8n,/data}
   volumes:
     - n8n_storage:/home/node/.n8n
     - ${N8N_DATA_PATH:-/mnt}:/data
