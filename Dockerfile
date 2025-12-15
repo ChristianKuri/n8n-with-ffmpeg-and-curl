@@ -5,7 +5,7 @@ FROM docker.n8n.io/n8nio/n8n:${N8N_VERSION}
 USER root
 
 # Install ffmpeg, curl, and yt-dlp using Alpine's package manager
-RUN apk add --no-cache ffmpeg curl yt-dlp
+RUN apk add --no-cache ffmpeg curl yt-dlp git
 
 # Switch back to node user
 USER node
