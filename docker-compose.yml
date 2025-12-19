@@ -26,7 +26,7 @@ x-shared: &shared
     - QUEUE_BULL_REDIS_HOST=redis
     - QUEUE_HEALTH_CHECK_ACTIVE=true
     - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
-    - N8N_RELEASE_DATE=${N8N_RELEASE_DATE}
+    - N8N_RELEASE_DATE=${N8N_RELEASE_DATE:-}
     - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=${N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS:-false}
     - N8N_PAYLOAD_SIZE_MAX=${N8N_PAYLOAD_SIZE_MAX:-512}
     - NODE_OPTIONS=--max-old-space-size=${NODE_MAX_MEMORY:-4096}
@@ -89,5 +89,6 @@ services:
   n8n:
     <<: *shared
     container_name: ${N8N_CONTAINER_NAME:-n8n}
+    pull_policy: always
     ports:
       - ${N8N_PORT:-5678}:5678
