@@ -32,14 +32,29 @@ jobs:
         with:
           token: ${{ secrets.PAT_GITHUB }}
 
-      - name: Get latest n8n version
+      - name: Get latest stable n8n version
         id: get-version
         run: |
-          # Get the latest n8n version by checking the available tags from Docker Hub
-          LATEST_VERSION=$(curl -s "https://hub.docker.com/v2/repositories/n8nio/n8n/tags?page_size=25" | jq -r '.results[] | select(.name | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) | .name' | sort -V | tail -n1)
+          # Get the digest of the 'stable' tag
+          STABLE_DIGEST=$(curl -s "https://hub.docker.com/v2/repositories/n8nio/n8n/tags/stable" | jq -r '.digest')
+          echo "Stable tag digest: $STABLE_DIGEST"
+          
+          # Find which semantic version tag has the same digest as 'stable'
+          # This ensures we're tracking the actual stable release version, not beta/pre-release
+          LATEST_VERSION=$(curl -s "https://hub.docker.com/v2/repositories/n8nio/n8n/tags?page_size=100" | \
+            jq -r --arg digest "$STABLE_DIGEST" \
+            '.results[] | select(.name | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) | select(.digest == $digest) | .name' | \
+            sort -V | tail -n1)
+          
+          # Fallback: if we can't find a matching version, use 'stable' tag directly
+          if [ -z "$LATEST_VERSION" ] || [ "$LATEST_VERSION" == "null" ]; then
+            echo "Warning: Could not find version tag matching stable digest, using 'stable' tag"
+            LATEST_VERSION="stable"
+          fi
           
           echo "LATEST_VERSION=$LATEST_VERSION" >> $GITHUB_ENV
-          echo "Latest n8n version: $LATEST_VERSION"
+          echo "N8N_TAG=stable" >> $GITHUB_ENV
+          echo "Latest stable n8n version: $LATEST_VERSION"
           
           # Create version file if it doesn't exist
           if [ ! -f .n8n-version ]; then
@@ -97,7 +112,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            N8N_VERSION=${{ env.LATEST_VERSION }}
+            N8N_VERSION=${{ env.N8N_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
