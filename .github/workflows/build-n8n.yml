@@ -136,3 +136,20 @@ jobs:
           
           # Use the PAT for pushing changes
           git push https://${{ secrets.PAT_GITHUB }}@github.com/${{ github.repository }}.git HEAD:main
+
+      # Trigger Dokploy deployment webhook
+      - name: Trigger Dokploy deployment
+        if: env.UPDATE_NEEDED == 'true'
+        continue-on-error: true
+        run: |
+          echo "Triggering Dokploy deployment webhook..."
+          curl -X POST "${{ secrets.DOKPLOY_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "version": "${{ env.LATEST_VERSION }}",
+              "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.LATEST_VERSION }}",
+              "digest": "${{ steps.push.outputs.digest }}",
+              "workflow_run": "${{ github.run_id }}",
+              "commit": "${{ github.sha }}"
+            }' \
+            -f -s -S || echo "Warning: Dokploy webhook call failed (secret may not be set)"
