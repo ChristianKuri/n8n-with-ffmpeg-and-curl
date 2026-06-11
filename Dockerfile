@@ -1,5 +1,8 @@
 ARG N8N_VERSION=latest
-FROM docker.n8n.io/n8nio/n8n:${N8N_VERSION}
+# Pull the official n8n image from GHCR instead of docker.n8n.io (a Docker Hub
+# proxy) — unauthenticated Docker Hub pulls from shared CI runner IPs hit the
+# 429 rate limit, while the workflow is already authenticated against ghcr.io.
+FROM ghcr.io/n8n-io/n8n:${N8N_VERSION}
 
 # Switch to root user to install packages
 USER root
